@@ -11,3 +11,5 @@ Google Sheets.
 - Notificación por Gmail condicionada a que la reunión se haya confirmado
 
 ⚠️ Nota: el JSON exportado no incluye credenciales por motivos de seguridad.
+
+Link al archivo sheets https://docs.google.com/spreadsheets/d/1HGd4B3K-kWFjlPIf1gPp-a8cU8QJAwWXnFQk4c_hGNs/edit?usp=sharing
