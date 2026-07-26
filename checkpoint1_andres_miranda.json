@@ -1,0 +1,396 @@
+{
+  "name": "Checkpoint 1 - Agente de Calificación de Leads",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -16,
+        0
+      ],
+      "id": "40851049-5f6e-49ff-9e29-0a9710137ecb",
+      "name": "When chat message received",
+      "webhookId": "91f95558-9e79-4826-b991-6a758d0ff9ab"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=CONTEXTO TEMPORAL:\nLa fecha y hora actual es: {{ $now.setZone('America/Santiago').setLocale('es').toFormat('EEEE dd/MM/yyyy HH:mm') }}\nUsa esta fecha como referencia para calcular cualquier día relativo mencionado por el usuario (ej: \"el miércoles\", \"mañana\", \"la próxima semana\", \"en 3 días\").\n\nROL:\nEres el Coordinador de Agenda. Tu función es gestionar solicitudes de reuniones entrantes de forma autónoma y profesional.\n\nÁMBITO:\nAtiendes únicamente solicitudes relacionadas con agendar, modificar o consultar reuniones. No respondes preguntas fuera de este dominio (soporte técnico, ventas, consultas generales de la empresa, etc.).\n\nOBJETIVO:\n1. Identificar en el mensaje del usuario: nombre del solicitante, email, hora, fecha.\n2. Verificar disponibilidad consultando la hoja de cálculo de agenda mediante la herramienta de Google Sheets. Cada reunión ocupa el horario desde su hora de inicio hasta 1 hora después (por ejemplo, una reunión a las 10:00 ocupa el bloque 10:00-11:00). Al revisar las filas devueltas por la herramienta de Disponibilidad para la fecha solicitada, considerá que el horario solicitado está OCUPADO si se solapa con el bloque de 1 hora de cualquier reunión existente, no solo si coincide con la hora exacta. Por ejemplo, si ya existe una reunión a las 10:00, entonces las 10:00, 10:15, 10:30 o 10:45 también deben considerarse ocupadas, ya que caen dentro del bloque 10:00-11:00.\n4. Si el horario está ocupado, informar al usuario y sugerir el próximo horario disponible.\n5. Confirmar al usuario el resultado de la gestión de forma clara y breve.\n\nREGLAS Y ESCALAMIENTO:\n- REGLA CRÍTICA: Antes de llamar a la herramienta \"Agendamiento\", DEBES tener al menos 4 datos completos (Nombre, Email, Hora, Fecha) confirmados explícitamente por el usuario en la conversación. Si falta CUALQUIERA de estos datos, NO llames a ninguna herramienta: en cambio, respondé al usuario preguntando específicamente por los datos faltantes.\n- No tienes permitido eliminar ni modificar reuniones ya confirmadas sin una solicitud explícita de cancelación/reprogramación.\n- No tienes permitido agendar reuniones fuera del horario laboral (09:00 a 18:00, lunes a viernes).\n- No inventes disponibilidad: si no puedes verificar los datos en la hoja, escala el caso indicando que un humano debe revisarlo.\n- No uses lenguaje informal ni jerga. Manten un tono profesional y neutro.\n- Ante cualquier ambigüedad en fecha u horario, pregunta al usuario antes de ejecutar la herramienta.\n- Cuando hayas registrado exitosamente una reunión usando la herramienta de Agendamiento, tu respuesta final al usuario debe incluir literalmente la palabra clave \"AGENDA CONFIRMADA\" en algún punto del texto (por ejemplo al final, entre corchetes). Si no llegaste a agendar (falta info, horario ocupado, o el usuario solo está consultando), no incluyas esa palabra clave.\nREGLAS DE INTERPRETACIÓN DE FECHAS:\n- Si el usuario menciona un día de la semana sin fecha exacta (ej: \"el miércoles\", \"el lunes que viene\"), calculá SIEMPRE el próximo día de esa semana que sea posterior a la fecha actual (nunca un día que ya pasó esta semana).\n- Si el usuario dice \"hoy\" o \"mañana\", calculá la fecha exacta en base al CONTEXTO TEMPORAL.\n- Una vez calculada la fecha exacta, confirmala explícitamente con el usuario antes de proceder a verificar disponibilidad (ejemplo: \"Entendido, te refieres al miércoles 29/07/2026, ¿confirmas?\").\n- Nunca asumas un año distinto al indicado en el CONTEXTO TEMPORAL salvo que el usuario lo aclare explícitamente.",
+          "maxIterations": 10
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "045dbedc-1209-4efe-bbea-1b98eb8727ce",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Usa esta herramienta cuando el usuario haya confirmado los datos completos de una reunión (Nombre, Email, Hora, Fecha) y se haya verificado previamente que el horario está disponible. Esta herramienta agrega una nueva fila en la hoja de cálculo \"Agenda\", registrando: Nombre, Email, Hora, Fecha y Estado=\"Confirmada\". No actives esta herramienta si el horario ya está ocupado o si falta algún dato obligatorio: en ese caso, primero pide la información faltante al usuario.",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1HGd4B3K-kWFjlPIf1gPp-a8cU8QJAwWXnFQk4c_hGNs",
+          "mode": "list",
+          "cachedResultName": "Leads - Clase 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HGd4B3K-kWFjlPIf1gPp-a8cU8QJAwWXnFQk4c_hGNs/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1472346879,
+          "mode": "list",
+          "cachedResultName": "Agenda",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HGd4B3K-kWFjlPIf1gPp-a8cU8QJAwWXnFQk4c_hGNs/edit#gid=1472346879"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Nombre": "={{ $fromAI('Nombre', 'Nombre del solicitante de la reunion', 'string') }}",
+            "Email": "={{ $fromAI('Email', 'Email del solicitante', 'string') }}",
+            "Hora": "={{ $fromAI('Hora', 'Hora de la reunion en formato HH:mm', 'string') }}",
+            "Fecha": "={{ $fromAI('Fecha', 'Fecha de la reunion en formato DD/MM/YYYY', 'string') }}",
+            "Estado": "Confirmado"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Nombre",
+              "displayName": "Nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Hora",
+              "displayName": "Hora",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Fecha",
+              "displayName": "Fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        464,
+        208
+      ],
+      "id": "015a37e9-e6d2-4700-9896-d39ff43e4ab8",
+      "name": "Agendamiento",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zL7J6uhYNVYihAir",
+          "name": "Google Sheets coder 102000"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Usa esta herramienta para verificar la disponibilidad de un horario antes de confirmar cualquier reunión. Consulta la hoja \"Agenda\" y devuelve las filas existentes para la fecha solicitada. Activa esta herramienta SIEMPRE antes de usar la herramienta de agendado, nunca después.",
+        "documentId": {
+          "__rl": true,
+          "value": "1HGd4B3K-kWFjlPIf1gPp-a8cU8QJAwWXnFQk4c_hGNs",
+          "mode": "list",
+          "cachedResultName": "Leads - Clase 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HGd4B3K-kWFjlPIf1gPp-a8cU8QJAwWXnFQk4c_hGNs/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1472346879,
+          "mode": "list",
+          "cachedResultName": "Agenda",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HGd4B3K-kWFjlPIf1gPp-a8cU8QJAwWXnFQk4c_hGNs/edit#gid=1472346879"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Fecha",
+              "lookupValue": "={{ $fromAI('Fecha_consulta', 'Fecha para la cual se quiere verificar disponibilidad, formato DD/MM/YYYY', 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        352,
+        208
+      ],
+      "id": "64f17c21-a7af-47c3-ab16-5b00c30a2f59",
+      "name": "Disponibilidad",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zL7J6uhYNVYihAir",
+          "name": "Google Sheets coder 102000"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "luisandres.mt@gmail.com",
+        "subject": "Reporte de ejecucion",
+        "message": "={{ $json.output.replace('AGENDA CONFIRMADA', '').trim() }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        752,
+        -16
+      ],
+      "id": "42be0028-8efe-4a67-a3fd-1d78329984c5",
+      "name": "log_observabilidad",
+      "webhookId": "cb72aadc-e13e-4308-860e-48bd8d701338",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "xJ6A4Ax5UzIaJEyX",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        224,
+        208
+      ],
+      "id": "d2da7ff4-3da5-4267-91b5-aaf366f354d2",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        80,
+        208
+      ],
+      "id": "a72f17a6-149a-4bce-b66b-5dc64ab36bdb",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "dkKr54aHfu6D6r6r",
+          "name": "Groq 102000"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d88577ee-7e1e-4e45-bc65-75bf938a8f3f",
+              "leftValue": "={{ $json.output }}",
+              "rightValue": "AGENDA CONFIRMADA",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        512,
+        0
+      ],
+      "id": "086db0cb-787f-4e5c-b3ce-ae772d030f1e",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "59d65a1d-6522-4c1e-baa4-493b900c961c",
+              "name": "output",
+              "value": "={{ $('AI Agent').item.json.output.replace(/\\[?AGENDA CONFIRMADA\\]?/g, '').trim() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        944,
+        -16
+      ],
+      "id": "3325c3bd-7187-4798-8206-63d4fab52f48",
+      "name": "Edit Fields"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agendamiento": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disponibilidad": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "log_observabilidad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "log_observabilidad": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "3ac25b44-afff-447b-a524-2cc5fba8a0e2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "db765e4115d5d79b0fc2b98feceeffcc14469720e767cc93d2b73254f9ed4014"
+  },
+  "nodeGroups": [],
+  "id": "Tln5XdHYNpSrhAYc",
+  "tags": []
+}
