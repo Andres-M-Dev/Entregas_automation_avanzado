@@ -1,0 +1,430 @@
+{
+  "name": "Chekpoint4",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        80,
+        0
+      ],
+      "id": "dbe14d09-70d2-4beb-a60a-2edd3f75bca3",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "xJ6A4Ax5UzIaJEyX",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ab97d9d0-a5d2-4511-aa55-cdc165fa6278",
+              "leftValue": "={{ !$json.Subject.toLowerCase().includes('auto-reply') &&\n   !$json.Subject.toLowerCase().includes('out of office') &&\n   !$json.Subject.toLowerCase().includes('undeliverable') &&\n   !$json.From.toLowerCase().includes('no-reply') &&\n   !$json.From.toLowerCase().includes('noreply') &&\n   !$json.From.toLowerCase().includes('notifications') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        304,
+        0
+      ],
+      "id": "51e8e1da-7697-45e7-833e-6ba15a9e1798",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "operation": "search",
+        "returnAll": true,
+        "filterGroupsUi": {
+          "filterGroupsValues": [
+            {
+              "filtersUi": {
+                "filterValues": [
+                  {
+                    "propertyName": "email|string",
+                    "value": "={{ $json.From.match(/<(.+)>/)?.[1] || $json.From }}"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        560,
+        -80
+      ],
+      "id": "0477fa11-d50c-4f05-a78f-765cf249584d",
+      "name": "Search contacts",
+      "alwaysOutputData": true,
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "8lm6lpKDc9SDcUyG",
+          "name": "HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "dde8a770-80aa-4258-87cf-ff99109143f0",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        736,
+        -80
+      ],
+      "id": "f641e012-bd1a-4473-94c0-a348d3defee0",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "email": "={{ $('Gmail Trigger').item.json.From.match(/<(.+)>/)?.[1] || $('Gmail Trigger').item.json.From }}",
+        "additionalFields": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        912,
+        48
+      ],
+      "id": "9a1fa3df-8723-4a1b-bf2a-24f7500544bc",
+      "name": "Create or update a contact",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "8lm6lpKDc9SDcUyG",
+          "name": "HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1088,
+        -80
+      ],
+      "id": "3d5a17af-1bfb-496c-b9fa-b1c8d7c67242",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9b8198a2-3f12-4d28-914c-3f853ebf7819",
+              "name": "cliente_email",
+              "value": "={{ $('Gmail Trigger').item.json.From.match(/<(.+)>/)?.[1] || $('Gmail Trigger').item.json.From }}",
+              "type": "string"
+            },
+            {
+              "id": "31eb171b-c1e1-4fa5-87eb-a5f386a79fb6",
+              "name": "asunto",
+              "value": "={{ $('Gmail Trigger').item.json.Subject }}",
+              "type": "string"
+            },
+            {
+              "id": "c18bc6df-8c6c-49bb-9ac9-837f1226e75d",
+              "name": "resumen",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1664,
+        -80
+      ],
+      "id": "9e265c26-e8e4-4051-9aa2-f6a9a3e914f3",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BNJFZQ34P",
+          "mode": "list",
+          "cachedResultName": "operaciones"
+        },
+        "text": "=Nuevo ticket de {{ $json.cliente_email }}: {{ $json.asunto }}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        1872,
+        -80
+      ],
+      "id": "777ab36f-8d47-4633-ab91-ec244392b936",
+      "name": "Send a message",
+      "webhookId": "dc992b73-0f77-4222-b332-0662ca0a1e37",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "6IvcIf02JHDNT2zj",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "=Re: {{ $('Gmail Trigger').item.json.Subject }}",
+        "message": "={{ $('Basic LLM Chain').item.json.text }}",
+        "options": {
+          "sendTo": "={{ $('Gmail Trigger').item.json.From.match(/<(.+)>/)?.[1] || $('Gmail Trigger').item.json.From }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2080,
+        -80
+      ],
+      "id": "82cc3f27-580a-4759-9c0f-5e0cafc4b857",
+      "name": "Create a draft",
+      "webhookId": "2e0d9cc9-8f9a-4348-90fc-e9b6cee9e2b3",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "xJ6A4Ax5UzIaJEyX",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analiza este mail de soporte y genera dos cosas: 1) Un resumen breve (máx 20 palabras) para el equipo interno. 2) Una respuesta cordial y breve para el cliente.  Asunto: {{ $('Gmail Trigger').item.json.Subject }} Cuerpo: {{ $('Gmail Trigger').item.json.snippet }} Responde en este formato exacto: RESUMEN: [tu resumen] RESPUESTA: [tu respuesta al cliente]",
+        "messages": {
+          "messageValues": []
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1296,
+        -80
+      ],
+      "id": "511733ce-c0aa-426e-b035-00043b8cd0a5",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        128
+      ],
+      "id": "7c735c01-e8ee-4767-b850-5fc2097eb0a8",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "dkKr54aHfu6D6r6r",
+          "name": "Groq 102000"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Search contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search contacts": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create or update a contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create or update a contact": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Create a draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "0384a165-0b1e-4475-8869-1e94c3a1efe7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "db765e4115d5d79b0fc2b98feceeffcc14469720e767cc93d2b73254f9ed4014"
+  },
+  "nodeGroups": [],
+  "id": "qFlP1wFPC05zDOtB",
+  "tags": []
+}
